@@ -1,0 +1,17 @@
+@startuml
+
+package java.lang.reflect{
+
+    interface AnnotatedElement
+    class AccessibleObject implements AnnotatedElement
+    interface Member
+    class Field extends AccessibleObject implements Member
+    interface GenericDeclaration extends AnnotatedElement
+    abstract class Executable extends AccessibleObject implements Member, GenericDeclaration
+    class Method extends Executable
+    class Constructor<T> extends Executable
+    class Parameter implements AnnotatedElement
+
+}
+
+@enduml

@@ -1,0 +1,23 @@
+@startuml
+
+package java.lang{
+    package java.lang.reflect{
+        interface GenericDeclaration {
+            public TypeVariable<?>[] getTypeParameters();
+        }
+        class Executable implements GenericDeclaration {
+            // 省略...
+        }
+        class Constructor<T> extends Executable {
+            // 省略...
+        }
+        class Method extends Executable {
+            // 省略...
+        }
+    }
+    class Class<T> implements GenericDeclaration {
+        // 省略...
+    }
+}
+
+@enduml

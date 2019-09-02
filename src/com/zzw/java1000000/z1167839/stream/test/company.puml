@@ -1,0 +1,46 @@
+@startuml
+
+
+[*] --> NotShooting
+
+[*] --> Idle
+Idle --> Processing: SignalEvent
+Processing --> Idle: Finish
+Idle --> Configuring : EvConfig
+Configuring --> Idle : EvConfig
+
+state Configuring {
+    [*] --> NewValueSelection
+    NewValueSelection --> NewValuePreview : EvNewValue
+    NewValuePreview --> NewValueSelection : EvNewValueRejected
+    NewValuePreview --> NewValueSelection : EvNewValueSaved
+    state NewValuePreview {
+        State1 -> State2
+    }
+}
+
+state 普通员工 {
+
+    [*] --> 待初审 : 提交
+
+    待初审 --> 待复审 : 导师审批通过
+
+    待复审 --> 复审通过 : 部门领导通过
+
+    复审通过 --> 审核通过 : HR审核通过
+
+}
+
+state 导师 {
+
+    [*] --> 待初审 : 提交
+
+    待初审 --> 待复审 : 导师审批通过
+
+    待复审 --> 复审通过 : 部门领导通过
+
+    复审通过 --> 审核通过 : HR审核通过
+
+}
+
+@enduml

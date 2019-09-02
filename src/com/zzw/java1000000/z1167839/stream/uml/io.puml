@@ -1,0 +1,33 @@
+@startuml
+
+package java.lang {
+    interface Readable {
+        int read(java.nio.CharBuffer cb) throws IOException;
+    }
+    interface AutoCloseable {
+        void close() throws Exception;
+    }
+    interface Appendable {
+        Appendable append(CharSequence csq) throws IOException;
+        Appendable append(CharSequence csq, int start, int end) throws IOException;
+        Appendable append(char c) throws IOException;
+    }
+}
+
+package java.io {
+    interface Closeable extends AutoCloseable {
+        void close() throws IOException;
+    }
+    interface Flushable {
+        void flush() throws IOException;
+    }
+
+    abstract class Reader implements Readable, Closeable
+    abstract class Writer implements Appendable, Closeable, Flushable
+
+    abstract class InputStream implements Closeable
+    abstract class OutputStream implements Closeable, Flushable {
+
+}
+
+@enduml

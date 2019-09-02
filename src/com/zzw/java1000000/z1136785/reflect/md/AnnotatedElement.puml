@@ -1,0 +1,31 @@
+@startuml
+
+package java.lang{
+    package java.lang.reflect{
+        interface AnnotatedElement{
+            default boolean isAnnotationPresent(Class<? extends Annotation> annotationClass)
+            Annotation[] getAnnotations()
+            Annotation[] getDeclaredAnnotations()
+            <T extends Annotation> T getAnnotation(Class<T> annotationClass)
+            default <T extends Annotation> T getDeclaredAnnotation(Class<T> annotationClass)
+            default <T extends Annotation> T[] getAnnotationsByType(Class<T> annotationClass)
+            default <T extends Annotation> T[] getDeclaredAnnotationsByType(Class<T> annotationClass)
+        }
+        interface TypeVariable<D extends GenericDeclaration> extends AnnotatedElement
+        class Parameter implements AnnotatedElement
+        interface AnnotatedType extends AnnotatedElement
+        interface AnnotatedArrayType extends AnnotatedType
+        interface AnnotatedParameterizedType extends AnnotatedType
+        interface AnnotatedTypeVariable extends AnnotatedType
+        class AccessibleObject implements AnnotatedElement
+        class Field extends AccessibleObject
+        interface GenericDeclaration extends AnnotatedElement
+        abstract class Executable extends AccessibleObject implements GenericDeclaration
+        class Method extends Executable
+        class Constructor<T> extends Executable
+        interface AnnotatedWildcardType extends AnnotatedType
+    }
+    class Class<T> implements GenericDeclaration,AnnotatedElement
+}
+
+@enduml

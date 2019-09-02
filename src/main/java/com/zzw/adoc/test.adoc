@@ -1,0 +1,838 @@
+# 多线程
+
+<html><!-- 自定义样式 -->
+	<style>
+		h1{color:#742222;}
+		h2{color:#8f3322;}
+		h3{color:#c05022;}
+		h4{color:#d75d21;}
+		h5{color:#dc6021;}
+		.key-class{
+			color:red;
+		}.shading{
+			background-color: #fee9cc;
+			padding: 2px 3px;
+		}.top-zzw-only, .bottom-zzw-only{
+			font-size:14px;color:white;
+			padding:2px 5px;position:fixed;
+			background:rgba(0,0,0,0.5);
+		}.bottom-zzw-only{
+			bottom:270px;right:50px;
+		}.top-zzw-only{
+			bottom:300px;right:50px;
+		}.top-zzw-only:hover, .bottom-zzw-only:hover{
+			background:rgba(220,96,33,0.8);
+		}
+	</style>
+</html>
+
+<!-- doc start -->
+
+* [线程](#thread)
+* [实现线程的两种方式](#method)
+* [线程的生命周期](#cycle)
+* [常用方法介绍](#fun)
+* [线程组](#group)
+* [通过 Callable 和 Future 创建线程](#callable)
+
+## <span id="thread">线程</span>
+
+1. 进程：一个进程是一个包含有自身地址的程序，每个独立执行的程序都称为进程，也就是正在执行的程序。
+2. 线程：一个线程是进程中的执行流程，一个进程可以同时包含多个线程。
+
+一个线程不能独立的存在，它必须是进程的一部分。一个进程一直运行，直到所有的非守护线程都结束运行后才能结束。多线程能满足程序员编写高效率的程序来达到充分利用 CPU 的目的。
+
+
+## <span id="method">实现线程的两种方式</span>
+
+
+#### 继承Thread类
+
+`Thread`类是`java.lang`包中的一个类，从这个类实例化的对象代表线程，程序启动一个新线程需要建立Thread实例。
+
+构造方法（常用）：
+
+```java
+public Thread() {}
+public Thread(String name) {} // 指定线程名称
+```
+
+
+完成线程真正功能的代码放在Thread类的run()方法中，当一个类继承Thread类后，就可以重写该方法。最终启动线程的方法是start()方法。
+
+
+即：**重写Thread类的run()方法**
+
+
+#### 实现Runnable接口
+
+由于java是单继承的，如果一个类由于业务需要继承其他类，而又需要实现多线程。则可以通过Runnable接口来实现。实际上，Thread类也实现了该接口。
+
+```java
+@FunctionalInterface
+public interface Runnable {
+    /**
+     * When an object implementing interface <code>Runnable</code> is used
+     * to create a thread, starting the thread causes the object's
+     * <code>run</code> method to be called in that separately executing
+     * thread.
+     * <p>
+     * The general contract of the method <code>run</code> is that it may
+     * take any action whatsoever.
+     *
+     * @see     java.lang.Thread#run()
+     */
+    public abstract void run();
+}
+```
+
+Thread类提供了Runnable的构造方法：
+
+```java
+public Thread(Runnable target) {}
+public Thread(Runnable target, String name) {} // 指定线程名
+```
+
+通过上述两个构造方法可以将Runnable实例与Thread实例关联。
+
+#### 示例
+
+```java
+/**
+ * @author zhengzewang on 2019/5/26.
+ */
+public class MyThread extends Thread {
+
+    @Override
+    public void run() {
+        System.out.println("my thread");
+    }
+
+}
+```
+
+```java
+/**
+ * @author zhengzewang on 2019/5/26.
+ */
+public class MyRunnable implements Runnable {
+    @Override
+    public void run() {
+        System.out.println("my runnable");
+    }
+}
+```
+
+```java
+/**
+ * @author zhengzewang on 2019/5/27.
+ */
+public class ThreadTest {
+
+    public static void main(String[] args) {
+        new MyThread().start();
+        new Thread(new MyRunnable()).start();
+    }
+
+}
+```
+
+运行输出：
+
+```java
+my thread
+my runnable
+```
+
+#### 即重写又实现runnable
+
+将上例中的`MyThread`改为如下：
+
+```java
+/**
+ * @author zhengzewang on 2019/5/26.
+ */
+public class MyThread extends Thread {
+
+    @Override
+    public void run() {
+        System.out.println("my thread");
+    }
+
+    public MyThread() {
+        super();
+    }
+
+    public MyThread(Runnable runnable) {
+        super(runnable);
+    }
+}
+```
+
+执行如下代码：
+
+```java
+/**
+ * @author zhengzewang on 2019/5/27.
+ */
+public class ThreadTest {
+
+    public static void main(String[] args) {
+        new MyThread(new MyRunnable()).start();
+    }
+
+}
+```
+
+运行输出：
+
+```java
+my thread
+```
+
+这个问题我们可以从Thread的源码中得到答案：
+
+```java
+public class Thread implements Runnable {
+
+	//...省略
+
+	private Runnable target;
+
+	//...省略
+
+	@Override
+    public void run() {
+        if (target != null) {
+            target.run();
+        }
+    }
+
+    //...省略
+
+}
+```
+
+从代码中可以看到，Thread也实现了Runable类，并且run方法默认执行关联的Runnable的run方法。当我们继承并重写了run方法后，这种关联便并不存在了。
+
+换句话说，不管何种场景，线程都是执行Thread类的run()方法。只是Thread类的run()默认执行关联的Runnable类的run()方法。
+
+所以，一旦重写了Thread类的run()方法，自然线程执行的也是被重写的方法。
+
+## <span id="cycle">线程的生命周期</span>
+
+![Alt text](_img/1558971010949_8794.png "Optional title")
+
+
+#### 新建状态
+
+新建状态也称为出生状态，是使用`new`关键字创建了一个Thread类对象。创建之后，该线程就处于新建状态。
+
+注：对于操作系统来讲，实际上这个线程是不存在，因为还不可能有cpu来执行这个线程。该新建状态仅相对于java等此类的高级语言来讲。
+
+
+#### 就绪状态
+
+当线程对象调用了start()方法之后，该线程就进入就绪状态。就绪状态的线程处于就绪队列中，要等待JVM里线程调度器的调度。
+
+就绪状态也被称为可执行状态，只要线程得到系统资源（cpu）就会进入运行状态。
+
+
+#### 运行状态
+
+前面提到，一旦线程得到资源，就会进入运行状态。实际上，一旦线程进入就绪状态，它就在就绪和运行状态下不断切换。（除非其他因素使它进入阻塞状态，或者线程执行结束，进入死亡状态）
+
+
+注：虽然线程看起来像同时执行，但事实上在同一时间点上只有一个线程被执行（因为一个程序系统只分配一个进程），只是线程之间切换比较快，所以才会是人产生线程是同时进行的假象。这也是为什么说线程一旦进入就绪状态，它就会在就绪和运行状态下不断切换。
+
+
+#### 阻塞状态
+
+一个线程如果执行了sleep、wait、suspend等方法，失去所占用资源之后，该线程就会进入阻塞状态。在睡眠时间到或重新获取资源后就可以重新就绪状态。
+
+一般分为三种：
+
+1. 等待阻塞：运行状态中的线程执行 wait() 方法，使线程进入到等待阻塞状态。
+2. 同步阻塞：线程在获取 synchronized 同步锁失败(因为同步锁被其他线程占用)。
+3. 其他阻塞：通过调用线程的 sleep() 或 join() 发出了 I/O 请求时，线程就会进入到阻塞状态。当sleep() 状态超时，join() 等待线程终止或超时，或者 I/O 处理完毕，线程重新转入就绪状态。
+
+
+#### 死亡状态
+
+一个线程执行完毕或者其他条件导致终止线程时，该线程就切换为死亡状态。
+
+
+## <span id="fun">常用方法介绍</span>
+
+下面仅列举一些常用方法：
+
+静态方法：
+
+
+1. public static native Thread currentThread(); // 获取当前线程
+2. public static native void sleep(long millis) throws InterruptedException; // 线程休眠
+3. public static int activeCount() {} // 当前活动的线程数
+4. public static native void yield(); // 礼让线程，暂停当前正在执行的线程对象，并执行其他线程。
+
+非静态方法：
+
+1. public synchronized void start() {} // 开始线程
+2. public void run() {} // 线程执行的代码
+3. public void interrupt() {} // 中断线程。
+4. public final native boolean isAlive(); // 测试线程是否处于活动状态
+5. public final void setPriority(int newPriority) {} // 设置线程的优先级
+6. public final synchronized void setName(String name) {} // 设置线程的名称
+7. public final void join() throws InterruptedException {} // 线程的加入
+8. public final void setDaemon(boolean on) {} // 将该线程标记为守护线程或用户线程。
+9. public long getId() {} // 获取线程id
+
+#### currentThread
+
+```java
+public static native Thread currentThread();
+```
+
+获取当前正在运行的线程。
+
+
+#### sleep
+
+```java
+public static native void sleep(long millis) throws InterruptedException;
+```
+
+在指定的毫秒数内让当前正在执行的线程休眠（暂停执行），此操作受到系统计时器和调度程序精度和准确性的影响。
+
+
+#### activeCount
+
+```java
+public static int activeCount() {
+    return currentThread().getThreadGroup().activeCount();
+}
+```
+
+当前线程所在线程组的活动线程数量
+
+
+#### yield
+
+```java
+public static native void yield();
+```
+
+暂停当前正在执行的线程对象，并执行其他线程。这是线程的礼让机制，但礼让并不意味这一定会暂停当前的线程，仅仅是告诉当前线程可以将资源让出来，即告知系统我对资源的利用不是很紧急。
+
+```java
+/**
+ * @author zhengzewang on 2019/5/28.
+ */
+public class ThreadYieldTest {
+
+    static boolean over = false;
+    static Map<Integer, Integer> tCount = new HashMap<>();
+
+    public static void main(String[] args) {
+        int j = 0;
+        tCount.put(1, 0);
+        tCount.put(2, 0);
+        while (j++ < 10000) {
+            Thread thread1 = new Thread(() -> {
+                int i = 0;
+                while (i++ < 1000) {
+                    Thread.yield(); //
+                }
+                over(1);
+            });
+            Thread thread2 = new Thread(() -> {
+                int i = 0;
+                while (i++ < 1000) {
+                }
+                over(2);
+            });
+            thread1.start();
+            thread2.start();
+            while (thread1.isAlive() || thread2.isAlive()) {
+                try {
+                    Thread.sleep(10);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+            }
+            over = false;
+        }
+        //
+        System.out.println("线程1先结束次数：" + tCount.get(1));
+        System.out.println("线程2先结束次数：" + tCount.get(2));
+    }
+
+    public synchronized static boolean over(Integer i) {
+        if (!over) {
+            over = true;
+            tCount.put(i, tCount.get(i) + 1);
+            return false;
+        }
+        return true;
+    }
+
+}
+```
+
+注意线程1加了yield。执行10000次，基本上线程1先结束的次数很少。但如果去掉yield，则结局完全不一样。
+
+下面是我跑了两次的结果：
+
+```
+线程1先结束次数：11
+线程2先结束次数：9989
+```
+
+```
+线程1先结束次数：6
+线程2先结束次数：9994
+```
+
+去掉yield再跑一次：
+
+```
+线程1先结束次数：8933
+线程2先结束次数：1067
+```
+
+
+#### start
+
+```java
+public synchronized void start() {
+    // ellipsis ...
+}
+```
+
+表示开始执行线程，Java 虚拟机调用该线程的 run 方法。
+
+
+#### run
+
+```java
+@Override
+public void run() {
+    if (target != null) {
+        target.run();
+    }
+}
+```
+
+target是`Runnable`对象。run方法表示线程开始时执行的方法。
+
+
+#### interrupt
+
+```java
+public void interrupt() {
+    // ellipsis ...
+}
+```
+
+表示中断线程。
+
+```java
+public static boolean interrupted() {
+    return currentThread().isInterrupted(true);
+}
+```
+
+返回该线程是否中断中。
+
+#### isAlive
+
+```java
+public final native boolean isAlive();
+```
+
+线程是否处于活动状态
+
+
+#### setPriority
+
+```java
+public final void setPriority(int newPriority) {
+    // ellipsis ...
+}
+```
+
+设置线程的优先级。
+
+
+线程的优先级有1-10。10为最高优先级，1为最低优先级。默认是5。
+
+#### setName
+
+```java
+public final synchronized void setName(String name) {
+    // ellipsis ...
+}
+```
+
+设置线程名称
+
+
+#### join
+
+```java
+public final void join() throws InterruptedException {
+    join(0);
+}
+public final synchronized void join(long millis) throws InterruptedException {
+    // ellipsis ...
+}
+public final synchronized void join(long millis, int nanos) throws InterruptedException {
+    // ellipsis ...
+}
+```
+
+线程的加入。
+
+1. 不指定实际或者实际为0表示主线程需要等join线程执行完毕
+2. 传入大于等于0的实际表示主线程最多等这么长的时间
+
+注：join的线程必须先start
+
+
+```java
+/**
+ * @author zhengzewang on 2019/6/9.
+ */
+public class ThreadJoinTest {
+
+    public static void main(String[] args) throws InterruptedException {
+        Thread thread = new Thread(() -> {
+            int i = 0;
+            while (i < 10) {
+                try {
+                    System.out.println(i);
+                    Thread.sleep(1000);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                } finally {
+                    i++;
+                }
+            }
+            System.out.println("join线程执行完毕");
+        });
+        thread.start();
+        thread.join(); // 必须先start
+        System.out.println("main线程");
+    }
+
+}
+```
+
+main线程会等join线程先执行完毕。
+
+
+#### setDaemon
+
+```java
+public final void setDaemon(boolean on) {
+    checkAccess();
+    if (isAlive()) {
+        throw new IllegalThreadStateException();
+    }
+    daemon = on;
+}
+public final boolean isDaemon() {
+    return daemon;
+}
+```
+
+守护线程--也称“服务线程”，在没有用户线程可服务时会自动离开。
+
+守护线程的优先级比较低，用于为系统中的其他对象和线程提供服务。
+
+垃圾回收机制就是一个守护线程，当程序中不再有任何运行的Thread（非守护线程），垃圾回收器也就无事可做，这个时候垃圾回收器线程也会自动的离开。
+
+
+```java
+/**
+ * @author zhengzewang on 2019/6/9.
+ */
+public class ThreadDaemonTest {
+
+    public static void main(String[] args) {
+        Thread thread1 = new Thread(() -> {
+            while (true) {
+                System.out.println("守护线程");
+                try {
+                    Thread.sleep(1000);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+            }
+        });
+        Thread thread2 = new Thread(() -> {
+            int i = 0;
+            while (i < 3) {
+                System.out.println(i);
+                try {
+                    Thread.sleep(1000);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                } finally {
+                    i++;
+                }
+            }
+        });
+        thread1.setDaemon(true);
+        thread1.start();
+        thread2.start();
+        System.out.println(thread1.isDaemon());
+    }
+
+}
+```
+
+线程1并没有为其设置线程终止条件。但因为其是守护线程，会在其他线程结束后自动退出。
+
+运行输出：
+
+```
+true
+0
+守护线程
+守护线程
+1
+守护线程
+2
+守护线程
+```
+
+
+#### getId
+
+```java
+public long getId() {
+    return tid;
+}
+```
+
+获取线程id
+
+## <span id="group">线程组</span>
+
+线程组用于批量管理线程和线程组对象，有效地对线程或线程组对象进行组织。
+
+
+Thread关于线程组的构造方法：
+
+```java
+public Thread(ThreadGroup group, Runnable target) {} //
+public Thread(ThreadGroup group, String name) {} //
+public Thread(ThreadGroup group, Runnable target, String name) {} //
+public Thread(ThreadGroup group, Runnable target, String name, long stackSize) {} //
+```
+
+从该构造方法可以看出，创建线程可以指定线程组。那么线程组如何创建呢？
+
+> 不指定线程组的情况下，默认为父线程组（即创建该线程的线程的线程组）
+
+ThreadGroup的构造方法：
+
+```java
+public ThreadGroup(String name) {} //
+public ThreadGroup(ThreadGroup parent, String name) {} //
+```
+
+
+看一个简单的例子：
+
+
+```java
+/**
+ * @author zhengzewang on 2019/6/9.
+ */
+public class ThreadGroupTest {
+
+    public static void main(String[] args) {
+        ThreadGroup group1 = new ThreadGroup("线程组1");
+        ThreadGroup group2 = new ThreadGroup("线程组2");
+        Thread thread1_0 = new Thread(group1, () -> System.out.println(Thread.currentThread().getThreadGroup()));
+        Thread thread2_0 = new Thread(group2, () -> System.out.println(Thread.currentThread().getThreadGroup()));
+        thread1_0.start();
+        thread2_0.start();
+    }
+
+}
+```
+
+运行输出：
+
+```
+java.lang.ThreadGroup[name=线程组1,maxpri=10]
+java.lang.ThreadGroup[name=线程组2,maxpri=10]
+```
+
+
+#### 自动归档
+
+
+线程组是一个树形机构。线程组下面可以有线程，也可以有线程组。如下图：
+
+![Alt text](_img/1560064544607_7459.png "Optional title")
+
+当创建一个线程组，未指定其所属线程组时，系统会自动将其归档为所在线程的线程组。
+
+```java
+/**
+ * @author zhengzewang on 2019/6/9.
+ */
+public class ThreadGroupTest {
+
+    public static void main(String[] args) {
+        ThreadGroup group1 = new ThreadGroup("线程组1");
+        System.out.println(group1.getParent());
+        Thread thread = new Thread(group1, () -> {
+            ThreadGroup group2 = new ThreadGroup("线程组2");
+            System.out.println(group2.getParent());
+        });
+        thread.start();
+    }
+
+}
+```
+
+运行输出：
+
+```
+java.lang.ThreadGroup[name=main,maxpri=10]
+java.lang.ThreadGroup[name=线程组1,maxpri=10]
+```
+
+而所有的线程组的根线程组就是系统线程组。
+
+#### 获取线程组内的所有线程
+
+获取线程组内的所有线程，需要借助方法`enumerate`
+
+```java
+/**
+ * @author zhengzewang on 2019/6/9.
+ */
+public class ThreadGroupTest {
+
+    public static void main(String[] args) throws InterruptedException {
+        ThreadGroup group = new ThreadGroup("线程组");
+        new Thread(group, () -> System.out.println("线程组-线程1")).start();
+        new Thread(group, () -> System.out.println("线程组-线程2")).start();
+        Thread[] threads = new Thread[group.activeCount()];
+        group.enumerate(threads);
+        for (Thread thread : threads) {
+            System.out.println(thread);
+        }
+    }
+}
+```
+
+一般情况下运行输出：
+
+```
+线程组-线程1
+Thread[Thread-0,5,线程组]
+线程组-线程2
+Thread[Thread-1,5,线程组]
+```
+
+由于线程的抢占资源问题，运行结果不一定是上述结果。
+
+1. 执行`activeCount`方法时子线程均未结束，执行`enumerate`子线程已结束或部分结束。则数组中存在为null的元素
+2. 执行`enumerate`有新线程加入，则得到的结果是另外一种。
+
+```java
+/**
+ * @author zhengzewang on 2019/6/9.
+ */
+public class ThreadGroupTest {
+
+    public static void main(String[] args) throws InterruptedException {
+        ThreadGroup group = new ThreadGroup("线程组");
+        new Thread(group, () -> System.out.println("线程组-线程1"),"线程1").start();
+        Thread[] threads = new Thread[group.activeCount()];
+        Thread.sleep(10);
+        new Thread(group, () -> System.out.println("线程组-线程2"),"线程2").start();
+        group.enumerate(threads);
+        for (Thread thread : threads) {
+            System.out.println(thread.getName());
+        }
+    }
+
+}
+```
+
+运行输出：
+
+```
+线程组-线程1
+线程2
+线程组-线程2
+```
+
+由此可以看出，`activeCount`只是用于帮助我们判断线程数，但实际执行`enumerate`方法时可能是另一个结果。
+
+## <span id="callable">通过 Callable 和 Future 创建线程</span>
+
+Callable 和 Future 实际上是对Runnable的封装，封装过后为的是能够得到线程执行的结果值。
+
+```java
+/**
+ * @author zhengzewang on 2019/6/9.
+ */
+public class CallableTest implements Callable<Integer> {
+
+    @Override
+    public Integer call() throws InterruptedException {
+        System.out.println(Thread.currentThread());
+        System.out.println("call");
+        Thread.sleep(1000);
+        return 99;
+    }
+
+    public static void main(String[] args) throws ExecutionException, InterruptedException {
+        System.out.println(Thread.currentThread());
+        CallableTest callableTest = new CallableTest();
+        FutureTask<Integer> futureTask = new FutureTask<>(callableTest);
+        new Thread(futureTask).start();
+        System.out.println(futureTask.get());
+    }
+}
+```
+
+运行输出：
+
+```
+Thread[main,5,main]
+Thread[Thread-0,5,main]
+call
+99
+```
+
+1. 实现Callable，并指定返回值类型。
+2. 通过FutureTask包装Callable。
+3. 通过futureTask.get()得到线程返回值。
+
+调用get方法，如果对象的线程还未运行或未运行结束，则会一直等待。
+
+## <span id='refer'>参考文档</span>
+
+<a href="https://www.cnblogs.com/mrgong/p/3833409.html" target="_blank">Thread 守护线程 Thread.setDaemon详解</a>
+<br>
+<a href="https://www.cnblogs.com/xrq730/p/4856072.html" target="_blank">Java多线程16：线程组</a>
+<br>
+
+<br>
+
+-----
+<br>
+thanks！
+<a href="javascript:scrollTo(0,0);" class='top-zzw-only'>顶部</a>
+<a href="javascript:scrollTo(0,document.body.scrollHeight);" class='bottom-zzw-only'>底部</a>
+**<div style="text-align: right;color: red;font-size: 20px;">--郑泽旺</div>**
+<div style="text-align: right;" id='bottom-zzw-only'>2019-05-26</div>

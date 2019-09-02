@@ -1,0 +1,50 @@
+@startuml
+
+class Parameter implements AnnotatedElement
+class AccessibleObject implements AnnotatedElement {
+    public void setAccessible(boolean flag)
+    public boolean isAccessible()
+    public <T extends Annotation> T getAnnotation(Class<T> annotationClass)
+    public boolean isAnnotationPresent(Class<? extends Annotation> annotationClass)
+    public <T extends Annotation> T[] getAnnotationsByType(Class<T> annotationClass)
+    public Annotation[] getAnnotations()
+    public <T extends Annotation> T getDeclaredAnnotation(Class<T> annotationClass)
+    public <T extends Annotation> T[] getDeclaredAnnotationsByType(Class<T> annotationClass)
+    public Annotation[] getDeclaredAnnotations()
+}
+
+interface Member {
+    public Class<?> getDeclaringClass();
+    public String getName();
+    public int getModifiers();
+    public boolean isSynthetic();
+}
+interface GenericDeclaration extends AnnotatedElement
+abstract class Executable extends AccessibleObject implements Member, GenericDeclaration {
+    public abstract Class<?> getDeclaringClass();
+    public abstract String getName();
+    public abstract int getModifiers();
+    public abstract TypeVariable<?>[] getTypeParameters();
+    public abstract Class<?>[] getParameterTypes();
+    public int getParameterCount()
+    public Type[] getGenericParameterTypes()
+    public Parameter[] getParameters()
+    public abstract Class<?>[] getExceptionTypes();
+    public Type[] getGenericExceptionTypes()
+    public abstract String toGenericString();
+    public boolean isVarArgs()
+    public boolean isSynthetic()
+    public abstract Annotation[][] getParameterAnnotations();
+    public <T extends Annotation> T getAnnotation(Class<T> annotationClass)
+    public <T extends Annotation> T[] getAnnotationsByType(Class<T> annotationClass)
+    public Annotation[] getDeclaredAnnotations()
+    public abstract AnnotatedType getAnnotatedReturnType();
+    public AnnotatedType getAnnotatedReceiverType()
+    public AnnotatedType[] getAnnotatedParameterTypes()
+    public AnnotatedType[] getAnnotatedExceptionTypes()
+}
+class Field extends AccessibleObject implements Member
+class Method extends Executable
+class Constructor<T> extends Executable
+
+@enduml

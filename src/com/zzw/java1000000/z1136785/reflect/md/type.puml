@@ -1,0 +1,35 @@
+@startuml
+
+package java.lang{
+    package java.lang.reflect{
+        interface Type{
+        }
+
+        interface ParameterizedType extends Type{
+            Type[] getActualTypeArguments();
+            Type getRawType();
+            Type getOwnerType();
+        }
+
+        interface TypeVariable<D extends GenericDeclaration> extends Type {
+            Type[] getBounds();
+            D getGenericDeclaration();
+            String getName();
+            AnnotatedType[] getAnnotatedBounds();
+        }
+
+        interface GenericArrayType extends Type {
+            Type getGenericComponentType();
+        }
+
+        interface WildcardType extends Type {
+            Type[] getUpperBounds();
+            Type[] getLowerBounds();
+        }
+    }
+    class Class<T> implements Type {
+        // 省略...
+    }
+}
+
+@enduml

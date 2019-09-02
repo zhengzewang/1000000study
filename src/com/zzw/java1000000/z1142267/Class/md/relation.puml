@@ -1,0 +1,13 @@
+@startuml
+
+class Class<T> implements java.io.Serializable,GenericDeclaration,Type,AnnotatedElement{
+    public Package getPackage()
+    public String getName()
+}
+class Field extends AccessibleObject implements Member
+abstract class Executable extends AccessibleObject implements Member, GenericDeclaration
+class Method extends Executable
+class Constructor<T> extends Executable
+class Parameter implements AnnotatedElement
+
+@enduml
